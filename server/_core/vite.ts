@@ -38,6 +38,7 @@ export async function setupVite(app: Express, server: Server) {
         `src="/src/main.tsx"`,
         `src="/src/main.tsx?v=${nanoid()}"`
       );
+
       const page = await vite.transformIndexHtml(url, template);
       res.status(200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
@@ -47,17 +48,18 @@ export async function setupVite(app: Express, server: Server) {
   });
 }
 
-// Always use the same path in both dev and production
-const distPath = path.resolve(import.meta.dirname, "../..", "dist", "public");
-
+export function serveStatic(app: Express) {
+  // Always use the same path in both dev and production
+  const distPath = path.resolve(import.meta.dirname, "../..", "dist", "public");
+  
   if (!fs.existsSync(distPath)) {
     console.error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`
     );
   }
-
+  
   app.use(express.static(distPath));
-
+  
   // fall through to index.html if the file doesn't exist
   app.use("*", (_req, res) => {
     res.sendFile(path.resolve(distPath, "index.html"));
