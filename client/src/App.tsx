@@ -1,28 +1,32 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/NotFound";
+import { lazy, Suspense } from "react";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import Home from "./pages/Home";
-import CheckIn from "./pages/CheckIn";
-import Assets from "./pages/Assets";
-import Executors from "./pages/Executors";
-import AIGuidance from "./pages/AIGuidance";
+
+const Home = lazy(() => import("./pages/Home"));
+const CheckIn = lazy(() => import("./pages/CheckIn"));
+const Assets = lazy(() => import("./pages/Assets"));
+const Executors = lazy(() => import("./pages/Executors"));
+const AIGuidance = lazy(() => import("./pages/AIGuidance"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
-    <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/check-in"} component={CheckIn} />
-      <Route path={"/assets"} component={Assets} />
-      <Route path={"/executors"} component={Executors} />
-      <Route path={"/ai-guidance"} component={AIGuidance} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
-    </Switch>
+    <Suspense fallback={null}>
+      <Switch>
+        <Route path={"/"} component={Home} />
+        <Route path={"/check-in"} component={CheckIn} />
+        <Route path={"/assets"} component={Assets} />
+        <Route path={"/executors"} component={Executors} />
+        <Route path={"/ai-guidance"} component={AIGuidance} />
+        <Route path={"/404"} component={NotFound} />
+        {/* Final fallback route */}
+        <Route component={NotFound} />
+      </Switch>
+    </Suspense>
   );
 }
 
