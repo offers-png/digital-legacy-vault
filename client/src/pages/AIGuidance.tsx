@@ -1,14 +1,14 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Zap, Send, AlertCircle } from "lucide-react";
 import { trpc } from "@/lib/trpc";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { toast } from "sonner";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Streamdown } from "streamdown";
+
+const Streamdown = lazy(() => import("streamdown").then((m) => ({ default: m.Streamdown })));
 
 export default function AIGuidance() {
   const { user } = useAuth();
@@ -137,7 +137,9 @@ export default function AIGuidance() {
                       }`}
                     >
                       {msg.role === "assistant" ? (
-                        <Streamdown>{msg.content}</Streamdown>
+                        <Suspense fallback={<p className="text-sm whitespace-pre-wrap">{msg.content}</p>}>
+                          <Streamdown>{msg.content}</Streamdown>
+                        </Suspense>
                       ) : (
                         <p className="text-sm">{msg.content}</p>
                       )}
