@@ -49,13 +49,8 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  // Check both possible locations
-  let distPath = path.resolve(import.meta.dirname, "..", "..", "dist", "public");
-  
-  // If not found, try the src subdirectory (Render deployment)
-  if (!fs.existsSync(distPath)) {
-    distPath = path.resolve(process.cwd(), "dist", "public");
-  }
+  // Use process.cwd() which will be /opt/render/project/src on Render
+  const distPath = path.join(process.cwd(), "dist", "public");
   
   if (!fs.existsSync(distPath)) {
     console.error(
@@ -67,6 +62,6 @@ export function serveStatic(app: Express) {
   
   // fall through to index.html if the file doesn't exist
   app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
+    res.sendFile(path.join(distPath, "index.html"));
   });
 }
