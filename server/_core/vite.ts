@@ -49,8 +49,13 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  // Always use the same path in both dev and production
-  const distPath = path.resolve(import.meta.dirname, "../..", "dist", "public");
+  // Check both possible locations
+  let distPath = path.resolve(import.meta.dirname, "..", "..", "dist", "public");
+  
+  // If not found, try the src subdirectory (Render deployment)
+  if (!fs.existsSync(distPath)) {
+    distPath = path.resolve(process.cwd(), "dist", "public");
+  }
   
   if (!fs.existsSync(distPath)) {
     console.error(
