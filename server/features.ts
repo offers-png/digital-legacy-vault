@@ -35,6 +35,9 @@ import { storagePut } from "./storage";
 import { invokeLLM } from "./_core/llm";
 import { TRPCError } from "@trpc/server";
 
+const isDbUnavailable = (e: unknown) =>
+  e instanceof Error && e.message === "Database not available";
+
 /**
  * Dead Man's Switch Router
  */
@@ -64,6 +67,7 @@ export const checkInRouter = router({
       const lastCheckIn = await getLastCheckIn(ctx.user.id);
       return { lastCheckIn, daysAgo: lastCheckIn ? Math.floor((Date.now() - lastCheckIn.getTime()) / (1000 * 60 * 60 * 24)) : null };
     } catch (error) {
+      if (isDbUnavailable(error)) return { lastCheckIn: null, daysAgo: null };
       console.error("Failed to get last check-in:", error);
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
     }
@@ -75,6 +79,7 @@ export const checkInRouter = router({
       const history = await getCheckInHistory(ctx.user.id);
       return history;
     } catch (error) {
+      if (isDbUnavailable(error)) return [];
       console.error("Failed to get check-in history:", error);
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
     }
@@ -123,6 +128,7 @@ export const executorRouter = router({
     try {
       return await getExecutorsForUser(ctx.user.id);
     } catch (error) {
+      if (isDbUnavailable(error)) return [];
       console.error("Failed to get executors:", error);
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
     }
@@ -229,6 +235,7 @@ export const assetRouter = router({
         createdAt: a.createdAt,
       }));
     } catch (error) {
+      if (isDbUnavailable(error)) return [];
       console.error("Failed to get assets:", error);
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
     }
@@ -248,6 +255,7 @@ export const assetRouter = router({
           createdAt: a.createdAt,
         }));
       } catch (error) {
+        if (isDbUnavailable(error)) return [];
         console.error("Failed to get assets by category:", error);
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       }
@@ -333,9 +341,9 @@ export const deathRouter = router({
 export const aiExecutorRouter = router({
   // Get gap analysis for assets
   getGapAnalysis: protectedProcedure.query(async ({ ctx }) => {
+    const categories = ["crypto", "social_media", "domain", "password", "business_login", "personal_message"];
     try {
       const assets = await getAssets(ctx.user.id);
-      const categories = ["crypto", "social_media", "domain", "password", "business_login", "personal_message"];
       const missingCategories = categories.filter(
         (cat) => !assets.some((a) => a.category === cat)
       );
@@ -352,26 +360,26 @@ Focus on practical advice and common assets people forget about.
 
       const response = await invokeLLM({
         messages: [
-          {
-            role: "system",
-            content: "You are a helpful digital estate planning advisor.",
-          },
-          {
-            role: "user",
-            content: prompt,
-          },
+          { role: "system", content: "You are a helpful digital estate planning advisor." },
+          { role: "user", content: prompt },
         ],
       });
 
-      const recommendations = response.choices[0]?.message.content || "";
-
       return {
         missingCategories,
-        recommendations,
+        recommendations: response.choices[0]?.message.content || "",
         assetCount: assets.length,
         coverage: Math.round((assets.length / categories.length) * 100),
       };
     } catch (error) {
+      if (isDbUnavailable(error)) {
+        return {
+          missingCategories: categories,
+          recommendations: "Connect a database to get personalized recommendations.",
+          assetCount: 0,
+          coverage: 0,
+        };
+      }
       console.error("Failed to get gap analysis:", error);
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
     }
@@ -415,6 +423,7 @@ export const notificationRouter = router({
     try {
       return await getNotifications(ctx.user.id);
     } catch (error) {
+      if (isDbUnavailable(error)) return [];
       console.error("Failed to get notifications:", error);
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
     }
