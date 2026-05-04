@@ -8,7 +8,7 @@ import { ENV } from './_core/env';
 const oauth2Client = new OAuth2Client(
   ENV.googleOAuthClientId,
   ENV.googleOAuthClientSecret,
-  `${ENV.oAuthServerUrl}/auth/google/callback`
+  `${ENV.oAuthServerUrl}/api/oauth/callback`
 );
 
 export interface GoogleUser {
