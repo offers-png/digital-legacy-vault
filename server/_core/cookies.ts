@@ -40,9 +40,9 @@ export function getSessionCookieOptions(
   //       : undefined;
 
   return {
-    httpOnly: true,
-    path: "/",
-    sameSite: "none",
-    secure: isSecureRequest(req),
-  };
+  httpOnly: true,
+  path: "/",
+  sameSite: "none",
+  secure: true,
+};
 }
