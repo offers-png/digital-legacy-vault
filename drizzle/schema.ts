@@ -1,29 +1,29 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, json, boolean, decimal, longtext } from "drizzle-orm/mysql-core";
+import { boolean, integer, json, pgEnum, pgTable, serial, text, timestamp, varchar } from "drizzle-orm/pg-core";
 
-/**
- * Core user table backing auth flow.
- * Extend this file with additional tables as your product grows.
- * Columns use camelCase to match both database fields and generated types.
- */
-export const users = mysqlTable("users", {
-  id: int("id").autoincrement().primaryKey(),
+export const roleEnum = pgEnum("role", ["user", "executor", "admin"]);
+export const executorStatusEnum = pgEnum("executor_status", ["pending", "accepted", "rejected", "revoked"]);
+export const deathStatusEnum = pgEnum("death_status", ["pending", "verified", "rejected"]);
+export const assetCategoryEnum = pgEnum("asset_category", ["crypto", "social_media", "domain", "password", "business_login", "personal_message"]);
+export const notificationTypeEnum = pgEnum("notification_type", ["missed_checkin", "death_verified", "asset_available"]);
+
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "executor", "admin"]).default("user").notNull(),
+  role: roleEnum("role").default("user").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 });
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// Dead Man's Switch: Track user check-ins
-export const checkIns = mysqlTable("checkIns", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
+export const checkIns = pgTable("checkIns", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
   checkedInAt: timestamp("checkedInAt").defaultNow().notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
@@ -31,76 +31,71 @@ export const checkIns = mysqlTable("checkIns", {
 export type CheckIn = typeof checkIns.$inferSelect;
 export type InsertCheckIn = typeof checkIns.$inferInsert;
 
-// Executor Designations: Link users to their executors
-export const executorDesignations = mysqlTable("executorDesignations", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(), // Asset owner
-  executorId: int("executorId").notNull(), // Executor
-  status: mysqlEnum("status", ["pending", "accepted", "rejected", "revoked"]).default("pending").notNull(),
+export const executorDesignations = pgTable("executorDesignations", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
+  executorId: integer("executorId").notNull(),
+  status: executorStatusEnum("status").default("pending").notNull(),
   invitationToken: varchar("invitationToken", { length: 128 }),
   invitationExpiresAt: timestamp("invitationExpiresAt"),
   acceptedAt: timestamp("acceptedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
 export type ExecutorDesignation = typeof executorDesignations.$inferSelect;
 export type InsertExecutorDesignation = typeof executorDesignations.$inferInsert;
 
-// Death Verification: Track death certificate uploads and verification
-export const deathVerifications = mysqlTable("deathVerifications", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(), // Asset owner who died
-  executorId: int("executorId").notNull(), // Executor who uploaded
-  certificateUrl: text("certificateUrl").notNull(), // S3 URL to death certificate
-  status: mysqlEnum("status", ["pending", "verified", "rejected"]).default("pending").notNull(),
+export const deathVerifications = pgTable("deathVerifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
+  executorId: integer("executorId").notNull(),
+  certificateUrl: text("certificateUrl").notNull(),
+  status: deathStatusEnum("status").default("pending").notNull(),
   verifiedAt: timestamp("verifiedAt"),
-  verifiedBy: int("verifiedBy"), // Admin who verified
+  verifiedBy: integer("verifiedBy"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
 export type DeathVerification = typeof deathVerifications.$inferSelect;
 export type InsertDeathVerification = typeof deathVerifications.$inferInsert;
 
-// Digital Assets: Store encrypted asset information
-export const digitalAssets = mysqlTable("digitalAssets", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  category: mysqlEnum("category", ["crypto", "social_media", "domain", "password", "business_login", "personal_message"]).notNull(),
+export const digitalAssets = pgTable("digitalAssets", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
+  category: assetCategoryEnum("category").notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
-  encryptedData: longtext("encryptedData").notNull(), // Encrypted JSON containing sensitive data
-  encryptionIv: varchar("encryptionIv", { length: 32 }).notNull(), // IV for encryption
-  executorEncryptedKey: longtext("executorEncryptedKey"), // Executor's copy of decryption key (encrypted)
-  isAccessible: boolean("isAccessible").default(false).notNull(), // Whether executor can access after death
+  encryptedData: text("encryptedData").notNull(),
+  encryptionIv: varchar("encryptionIv", { length: 32 }).notNull(),
+  executorEncryptedKey: text("executorEncryptedKey"),
+  isAccessible: boolean("isAccessible").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
 export type DigitalAsset = typeof digitalAssets.$inferSelect;
 export type InsertDigitalAsset = typeof digitalAssets.$inferInsert;
 
-// Encryption Keys: Store user's master encryption key (encrypted with password)
-export const encryptionKeys = mysqlTable("encryptionKeys", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull().unique(),
-  encryptedMasterKey: longtext("encryptedMasterKey").notNull(), // Master key encrypted with password
-  keyDerivationSalt: varchar("keyDerivationSalt", { length: 64 }).notNull(), // Salt for PBKDF2
-  keyDerivationIterations: int("keyDerivationIterations").default(100000).notNull(),
+export const encryptionKeys = pgTable("encryptionKeys", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull().unique(),
+  encryptedMasterKey: text("encryptedMasterKey").notNull(),
+  keyDerivationSalt: varchar("keyDerivationSalt", { length: 64 }).notNull(),
+  keyDerivationIterations: integer("keyDerivationIterations").default(100000).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
 export type EncryptionKey = typeof encryptionKeys.$inferSelect;
 export type InsertEncryptionKey = typeof encryptionKeys.$inferInsert;
 
-// Executor Notifications: Track notifications sent to executors
-export const executorNotifications = mysqlTable("executorNotifications", {
-  id: int("id").autoincrement().primaryKey(),
-  executorId: int("executorId").notNull(),
-  userId: int("userId").notNull(), // Asset owner
-  type: mysqlEnum("type", ["missed_checkin", "death_verified", "asset_available"]).notNull(),
+export const executorNotifications = pgTable("executorNotifications", {
+  id: serial("id").primaryKey(),
+  executorId: integer("executorId").notNull(),
+  userId: integer("userId").notNull(),
+  type: notificationTypeEnum("type").notNull(),
   message: text("message"),
   isRead: boolean("isRead").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -110,13 +105,12 @@ export const executorNotifications = mysqlTable("executorNotifications", {
 export type ExecutorNotification = typeof executorNotifications.$inferSelect;
 export type InsertExecutorNotification = typeof executorNotifications.$inferInsert;
 
-// Audit Log: Track all sensitive operations
-export const auditLogs = mysqlTable("auditLogs", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId"),
+export const auditLogs = pgTable("auditLogs", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId"),
   action: varchar("action", { length: 255 }).notNull(),
   resourceType: varchar("resourceType", { length: 255 }),
-  resourceId: int("resourceId"),
+  resourceId: integer("resourceId"),
   details: json("details"),
   ipAddress: varchar("ipAddress", { length: 45 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
