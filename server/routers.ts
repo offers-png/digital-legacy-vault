@@ -12,6 +12,7 @@ import {
 } from "./features";
 import { healthRouter } from "./health";
 import { googleOAuthRouter } from "./google-oauth-handler";
+import { accountRouter } from "./account.router";
 
 export const appRouter = router({
   system: systemRouter,
@@ -35,6 +36,7 @@ export const appRouter = router({
   notification: notificationRouter,
   health: healthRouter,
   googleAuth: googleOAuthRouter,
+  account: accountRouter,
 });
 
 export type AppRouter = typeof appRouter;

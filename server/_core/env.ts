@@ -10,4 +10,6 @@ export const ENV = {
   openAiApiKey: process.env.OPENAI_API_KEY ?? "",
   googleOAuthClientId: (process.env.GOOGLE_OAUTH_CLIENT_ID ?? "").trim(),
   googleOAuthClientSecret: (process.env.GOOGLE_OAUTH_CLIENT_SECRET ?? "").trim(),
+  resendApiKey: process.env.RESEND_API_KEY ?? "",
+  fromEmail: process.env.FROM_EMAIL ?? "",
 };
