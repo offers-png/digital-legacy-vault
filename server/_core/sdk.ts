@@ -266,25 +266,29 @@ class SDKServer {
     }
 
     const signedInAt = new Date();
+
+    const makeSyntheticUser = (): User => ({
+      id: 0,
+      openId: session.openId,
+      name: session.name || null,
+      email: null,
+      loginMethod: null,
+      role: "user" as const,
+      createdAt: signedInAt,
+      updatedAt: signedInAt,
+      lastSignedIn: signedInAt,
+    });
+
     const dbInstance = await db.getDb();
+    if (!dbInstance) return makeSyntheticUser();
 
-    // If DB is not configured, construct a minimal user from the JWT payload
-    // so the app remains usable without a database connection.
-    if (!dbInstance) {
-      return {
-        id: 0,
-        openId: session.openId,
-        name: session.name || null,
-        email: null,
-        loginMethod: null,
-        role: "user" as const,
-        createdAt: signedInAt,
-        updatedAt: signedInAt,
-        lastSignedIn: signedInAt,
-      };
+    let user: User | undefined;
+    try {
+      user = await db.getUserByOpenId(session.openId);
+    } catch (dbError) {
+      console.warn("[Auth] DB unavailable, using synthetic user:", String(dbError));
+      return makeSyntheticUser();
     }
-
-    let user = await db.getUserByOpenId(session.openId);
 
     if (!user) {
       try {
@@ -307,7 +311,11 @@ class SDKServer {
       throw ForbiddenError("User not found");
     }
 
-    await db.upsertUser({ openId: user.openId, lastSignedIn: signedInAt });
+    try {
+      await db.upsertUser({ openId: user.openId, lastSignedIn: signedInAt });
+    } catch (dbError) {
+      console.warn("[Auth] Failed to update lastSignedIn (non-fatal):", String(dbError));
+    }
 
     return user;
   }
