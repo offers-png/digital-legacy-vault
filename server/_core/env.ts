@@ -7,6 +7,7 @@ export const ENV = {
   isProduction: process.env.NODE_ENV === "production",
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
+  openAiApiKey: process.env.OPENAI_API_KEY ?? "",
   googleOAuthClientId: (process.env.GOOGLE_OAUTH_CLIENT_ID ?? "").trim(),
   googleOAuthClientSecret: (process.env.GOOGLE_OAUTH_CLIENT_SECRET ?? "").trim(),
 };
