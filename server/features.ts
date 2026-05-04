@@ -38,6 +38,9 @@ import { TRPCError } from "@trpc/server";
 const isDbUnavailable = (e: unknown) =>
   e instanceof Error && e.message === "Database not available";
 
+const isLlmUnconfigured = (e: unknown) =>
+  e instanceof Error && e.message === "OPENAI_API_KEY is not configured";
+
 /**
  * Dead Man's Switch Router
  */
@@ -56,6 +59,9 @@ export const checkInRouter = router({
       );
       return { success: true };
     } catch (error) {
+      if (isDbUnavailable(error)) {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Database not configured. Add DATABASE_URL to enable check-ins." });
+      }
       console.error("Failed to record check-in:", error);
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
     }
@@ -397,17 +403,15 @@ Focus on practical advice and common assets people forget about.
               content:
                 "You are a digital estate planning expert. Provide clear, practical guidance on managing digital assets and estate planning. Do not provide legal advice, but general information.",
             },
-            {
-              role: "user",
-              content: input.question,
-            },
+            { role: "user", content: input.question },
           ],
         });
 
-        return {
-          guidance: response.choices[0]?.message.content || "",
-        };
+        return { guidance: response.choices[0]?.message.content || "" };
       } catch (error) {
+        if (isLlmUnconfigured(error)) {
+          return { guidance: "AI guidance is not available — add an OPENAI_API_KEY environment variable on Render to enable this feature." };
+        }
         console.error("Failed to get estate guidance:", error);
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       }
