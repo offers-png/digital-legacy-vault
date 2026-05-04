@@ -171,8 +171,8 @@ class SDKServer {
     return this.signSession(
       {
         openId,
-        appId: ENV.appId,
-        name: options.name || "",
+        appId: ENV.appId || "app",
+        name: options.name || "User",
       },
       options
     );
@@ -257,7 +257,6 @@ class SDKServer {
   }
 
   async authenticateRequest(req: Request): Promise<User> {
-    // Regular authentication flow
     const cookies = this.parseCookies(req.headers.cookie);
     const sessionCookie = cookies.get(COOKIE_NAME);
     const session = await this.verifySession(sessionCookie);
@@ -266,11 +265,27 @@ class SDKServer {
       throw ForbiddenError("Invalid session cookie");
     }
 
-    const sessionUserId = session.openId;
     const signedInAt = new Date();
-    let user = await db.getUserByOpenId(sessionUserId);
+    const dbInstance = await db.getDb();
 
-    // If user not in DB, sync from OAuth server automatically
+    // If DB is not configured, construct a minimal user from the JWT payload
+    // so the app remains usable without a database connection.
+    if (!dbInstance) {
+      return {
+        id: 0,
+        openId: session.openId,
+        name: session.name || null,
+        email: null,
+        loginMethod: null,
+        role: "user" as const,
+        createdAt: signedInAt,
+        updatedAt: signedInAt,
+        lastSignedIn: signedInAt,
+      };
+    }
+
+    let user = await db.getUserByOpenId(session.openId);
+
     if (!user) {
       try {
         const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
@@ -292,10 +307,7 @@ class SDKServer {
       throw ForbiddenError("User not found");
     }
 
-    await db.upsertUser({
-      openId: user.openId,
-      lastSignedIn: signedInAt,
-    });
+    await db.upsertUser({ openId: user.openId, lastSignedIn: signedInAt });
 
     return user;
   }
