@@ -1,6 +1,6 @@
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
-import { exchangeCodeForTokens, getGoogleUserInfo } from "./google-oauth";
+import { exchangeCodeForTokens, getGoogleLoginUrl, getGoogleUserInfo } from "./google-oauth";
 import { upsertUser, getUserByOpenId } from "./db";
 import { TRPCError } from "@trpc/server";
 
@@ -88,7 +88,6 @@ export const googleOAuthRouter = router({
       })
     )
     .query(({ input }) => {
-      // Generate state parameter for CSRF protection
       const state = Buffer.from(
         JSON.stringify({
           returnPath: input.returnPath || "/",
@@ -96,22 +95,10 @@ export const googleOAuthRouter = router({
         })
       ).toString("base64");
 
-      const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
-      const redirectUri = `${process.env.OAUTH_SERVER_URL}/auth/google/callback`;
-      const scope = "openid email profile";
+      // Uses oauth2Client.generateAuthUrl which includes client_id from
+      // GOOGLE_OAUTH_CLIENT_ID server env var — no VITE_ build var needed.
+      const url = getGoogleLoginUrl(state);
 
-      const params = new URLSearchParams({
-        client_id: clientId || "",
-        redirect_uri: redirectUri || "",
-        response_type: "code",
-        scope,
-        state,
-        access_type: "offline",
-        prompt: "consent",
-      });
-
-      return {
-        url: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`,
-      };
+      return { url };
     }),
 });
