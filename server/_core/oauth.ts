@@ -27,13 +27,17 @@ async function handleGoogleCallback(code: string, req: Request, res: Response) {
   if (!tokens.access_token) throw new Error("No access token returned from Google");
 
   const googleUser = await getGoogleUserInfo(tokens.access_token);
-  await db.upsertUser({
-    openId: googleUser.id,
-    email: googleUser.email,
-    name: googleUser.name,
-    loginMethod: "google",
-    lastSignedIn: new Date(),
-  });
+  try {
+    await db.upsertUser({
+      openId: googleUser.id,
+      email: googleUser.email,
+      name: googleUser.name,
+      loginMethod: "google",
+      lastSignedIn: new Date(),
+    });
+  } catch (dbError) {
+    console.error("[OAuth] DB upsert failed (non-fatal, proceeding with session):", dbError);
+  }
 
   const sessionToken = await sdk.createSessionToken(googleUser.id, {
     name: googleUser.name || "",
