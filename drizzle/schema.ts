@@ -16,6 +16,11 @@ export const users = pgTable("users", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+  stripeCustomerId: varchar("stripeCustomerId", { length: 255 }),
+  stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 255 }),
+  subscriptionStatus: varchar("subscriptionStatus", { length: 50 }),
+  subscriptionPlan: varchar("subscriptionPlan", { length: 50 }),
+  subscriptionEndsAt: timestamp("subscriptionEndsAt"),
 });
 
 export type User = typeof users.$inferSelect;

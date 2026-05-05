@@ -13,6 +13,7 @@ const AIGuidance = lazy(() => import("./pages/AIGuidance"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const AccountSettings = lazy(() => import("./pages/AccountSettings"));
+const Billing = lazy(() => import("./pages/Billing"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 function Router() {
@@ -31,6 +32,7 @@ function Router() {
         <Route path="/executors" component={Executors} />
         <Route path="/ai-guidance" component={AIGuidance} />
         <Route path="/settings" component={AccountSettings} />
+        <Route path="/billing" component={Billing} />
         <Route path="/privacy" component={PrivacyPolicy} />
         <Route path="/terms" component={TermsOfService} />
         <Route path="/404" component={NotFound} />

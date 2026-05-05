@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { trpc } from "@/_core/trpc";
+import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -38,7 +38,7 @@ export default function AccountSettings() {
         navigate("/");
       }, 1500);
     },
-    onError: (err) => {
+    onError: (err: { message?: string }) => {
       toast.error(err.message || "Failed to delete account");
     },
   });
