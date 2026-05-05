@@ -8,6 +8,12 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import DashboardLayout from "@/components/DashboardLayout";
 
+const PRICE_IDS = {
+  basic: import.meta.env.VITE_STRIPE_PRICE_BASIC || "price_1TTp1OHDiwSWl43oQhBe2ELj",
+  premium: import.meta.env.VITE_STRIPE_PRICE_PREMIUM || "price_1TTp3JHDiwSWl43oIOxghwQa",
+  lifetime: import.meta.env.VITE_STRIPE_PRICE_LIFETIME || "price_1TTp5THDiwSWl43oD40IdeHW",
+};
+
 export default function Billing() {
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -147,7 +153,7 @@ export default function Billing() {
                       <li key={f} className="flex items-center gap-2"><Check className="w-4 h-4 text-green-500 shrink-0" />{f}</li>
                     ))}
                   </ul>
-                  <Button className="w-full" onClick={() => handleSubscribe("basic", process.env.VITE_STRIPE_PRICE_BASIC ?? "price_basic_monthly")} disabled={isProcessing}>
+                  <Button className="w-full" onClick={() => handleSubscribe("basic", PRICE_IDS.basic)} disabled={isProcessing}>
                     {isProcessing ? "Processing…" : "Get Started"}
                   </Button>
                 </CardContent>
@@ -173,7 +179,7 @@ export default function Billing() {
                       <li key={f} className="flex items-center gap-2"><Check className="w-4 h-4 text-green-500 shrink-0" />{f}</li>
                     ))}
                   </ul>
-                  <Button className="w-full bg-blue-500 hover:bg-blue-600" onClick={() => handleSubscribe("premium", process.env.VITE_STRIPE_PRICE_PREMIUM ?? "price_premium_monthly")} disabled={isProcessing}>
+                  <Button className="w-full bg-blue-500 hover:bg-blue-600" onClick={() => handleSubscribe("premium", PRICE_IDS.premium)} disabled={isProcessing}>
                     {isProcessing ? "Processing…" : "Upgrade to Premium"}
                   </Button>
                 </CardContent>
@@ -199,7 +205,7 @@ export default function Billing() {
                       <li key={f} className="flex items-center gap-2"><Check className="w-4 h-4 text-green-500 shrink-0" />{f}</li>
                     ))}
                   </ul>
-                  <Button className="w-full bg-yellow-500 hover:bg-yellow-600 text-black" onClick={() => handleOneTimePayment(process.env.VITE_STRIPE_PRICE_LIFETIME ?? "price_lifetime_onetime")} disabled={isProcessing}>
+                  <Button className="w-full bg-yellow-500 hover:bg-yellow-600 text-black" onClick={() => handleOneTimePayment(PRICE_IDS.lifetime)} disabled={isProcessing}>
                     {isProcessing ? "Processing…" : "Get Lifetime Access"}
                   </Button>
                 </CardContent>
